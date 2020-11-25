@@ -81,9 +81,10 @@ for n = 1:ncells
     bl.AppendComponent(drift3);
     bl.AppendComponent(sextD);
     
+    % Add errors to the beam line, small kicks
     corr2{n}        = OrbitCorrector;
     corr2{n}.length = corrlength;
-    corr2{n}.field  = [randn*1e-5, 1e-8];
+    corr2{n}.field  = [randn*1e-5, 1e-8]; 
     bl.AppendComponent(corr2{n});
     bl.AppendComponent(drift5);
     

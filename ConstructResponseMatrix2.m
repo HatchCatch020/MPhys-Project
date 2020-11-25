@@ -4,7 +4,7 @@ DefineBeamline
 f0 = MasterOscillator.GetFrequency();
 MasterOscillator.SetFrequency(f0*1.0);
 
-% Define blmorbity_nocorr as the bpm readings with no corector magnets.
+%  Define blmorbity_nocorr as the bpm readings with no corector magnets.
 
 for j = 1:numel(bpm)
    bpm{j}.ResetBuffer(1);
@@ -26,7 +26,7 @@ for j = 1:numel(bpm)
 end
 
 respmatrix = zeros(numel(bpm), numel(corr));
-figure(1)
+figure(3)
 hold off
 plot(bpmorbity_nocorr);
 
