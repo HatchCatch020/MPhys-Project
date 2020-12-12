@@ -15,7 +15,7 @@ beamline.quadsf = quadflist;
 beamline.quadsd = quaddlist;
 
 % Apply errors to the quadrupole magnets
-quaderror = 0.01;
+quaderror = 0.00;
   
 for n = 1:ncells
    
@@ -37,48 +37,27 @@ bpmorbity_nocorr = getBPMorbitdy(beamline, zerocorrs);
 
 % Specify the number of obersvations i.e. the number of columns in the
 % arrays of corrector settings and BPM readings
-numobs = 125;
+numobs = 50;
 % Initialize the arrays
 dbpm   = zeros(numel(beamline.bpm),  numobs);
 dcorra = zeros(numel(beamline.corr), numobs);
 
-%% Main loop to generate an input for mvregress
-dcorrstrength = 1e-4;    % Set the scale of corrector field strengths
-bpmresn       = 70.0e-6; % Set the resolution of the bpms
+dcorrstrength = 1e-4;
 
-for i = 1:numobs
-    
-    % Generate a random set of changes to corrector strengths...
-    dcorr       =  dcorrstrength*randn(numel(beamline.corr),1);
-    
-    % ...and find the change in the closed orbit with these strengths
-    bpmorbitdy  = getBPMorbitdy(beamline, dcorr) + randn(numel(beamline.bpm),1)*bpmresn;
-    
-    % Record the observation
-    dbpm(:,i)   = bpmorbitdy;
-    dcorra(:,i) = dcorr;
-    
-end
+%% Generate Response Matrices
+% 70.0e-6
+RespMatML = calcRespMatML(numobs, 0, dcorrstrength, beamline);
+RespMatC = calcRespMatC(dcorrstrength, beamline);
 
-%% Analyse the data using mvregress
-xmat  = dcorra';
-ymat  = dbpm';
+%% Compare Response Matrices
 
-xcell = cell(1,numobs);
+figure(2)
+hold off
+plot(RespMatML(:) - RespMatC(:), '-ok')
+xlabel('Response Matrix index')
+ylabel('Residual')
+title('Difference between ML method and Conventional method')
 
-for i = 1:numobs
-    xcell{i} = [kron([xmat(i,:)],eye(numel(beamline.bpm)))];
-end
-
-% Fit a response matrix to the observed changes in trajectory resulting
-% from given changes in corrector strengths
-[beta,sigma,E,V] = mvregress(xcell,ymat);
-
-% Calculate the error on the fit
-se = sqrt(diag(V));
-
-% beta is the response matrix found from the machine learning approach
-respmatML = reshape(beta, [numel(beamline.bpm), numel(beamline.corr)]);
 
 %% Check the result
 
@@ -89,7 +68,7 @@ dcorr      =  dcorrstrength*randn(numel(beamline.corr),1);
 bpmorbitdy = getBPMorbitdy(beamline, dcorr);
 
 % See what we get from the machine learning analysis...
-bpmorbitdyML = respmatML*dcorr;
+bpmorbitdyML = RespMatML*dcorr;
 
 % Calculate residual of ML and machine model
 residual = (bpmorbitdyML - bpmorbitdy);
@@ -157,7 +136,7 @@ function respmatML=calcRespMatML(numobs_, BPMnoise_, dcorrstrengthScale, beamlin
     respmatML = reshape(beta, [numel(beamline_.bpm), numel(beamline_.corr)]);
 end
 
-function respmatC=calcRespMatC(beamline_, dcorrfieldScale)
+function respmatC=calcRespMatC(dcorrfieldScale, beamline_)
     for j = 1:numel(beamline_.bpm)
         beamline_.bpm{j}.ResetBuffer(1);
     end
