@@ -26,14 +26,14 @@ dipole1 = Dipole;
   dipole1.angle  = 2*pi/ncells;          % radians
   dipole1.field  = beam.rigidity * dipole1.angle / dipole1.length; % tesla
   
-quadF  = Quadrupole;
-  quadF.length   = 0.25;                 % metres
-  quadF.gradient = 0.45 * beam.rigidity; % tesla/metre
-  quadF.aperture = [0.05, 0.05];         % metres
-  
-quadD  = Quadrupole;
-  quadD.length   = 0.25;                 % metres
-  quadD.gradient =-0.40 * beam.rigidity; % tesla/metre
+% quadF  = Quadrupole;
+%   quadF.length   = 0.25;                 % metres
+%   quadF.gradient = 0.45 * beam.rigidity + randn*1e-2*0; % tesla/metre
+%   quadF.aperture = [0.05, 0.05];         % metres
+%   
+% quadD  = Quadrupole;
+%   quadD.length   = 0.25;                 % metres
+%   quadD.gradient =-0.40 * beam.rigidity + randn*1e-2*0; % tesla/metre
   
 sextF  = Sextupole;
   sextF.length   = 0.15;                 % metres
@@ -54,18 +54,29 @@ rfcav1 = RFCavity;
 drift6 = Drift;
   drift6.length = drift5.length - rfcav1.length; % metres
   
-bpm   = cell(1,2*ncells);
-corr  = cell(1,  ncells);
+bpm    = cell(1,2*ncells);
+corr   = cell(1,  ncells);
 corr2  = cell(1,  ncells);
-  
+
+quadflist = cell(1, ncells);
+quaddlist = cell(1, ncells);
+
 bl = Beamline;
   
 for n = 1:ncells
     
+    quadflist{n} = Quadrupole;
+    quadflist{n}.length   = 0.25;                 % metres
+    quadflist{n}.gradient = 0.45 * beam.rigidity; % tesla/metre
+  
+    quaddlist{n} = Quadrupole;
+    quaddlist{n}.length   = 0.25;                 % metres
+    quaddlist{n}.gradient =-0.40 * beam.rigidity; % tesla/metre
+  
     bl.AppendComponent(drift2);
     bpm{2*n-1} = BeamPositionMonitor;
     bl.AppendComponent(bpm{2*n-1});
-    bl.AppendComponent(quadF);
+    bl.AppendComponent(quadflist{n});
     bl.AppendComponent(drift3);
     bl.AppendComponent(sextF);
     bl.AppendComponent(drift4);
@@ -77,7 +88,7 @@ for n = 1:ncells
     bl.AppendComponent(drift1);
     bpm{2*n}   = BeamPositionMonitor;
     bl.AppendComponent(bpm{2*n});
-    bl.AppendComponent(quadD);
+    bl.AppendComponent(quaddlist{n});
     bl.AppendComponent(drift3);
     bl.AppendComponent(sextD);
     
