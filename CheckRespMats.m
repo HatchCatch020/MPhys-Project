@@ -1,24 +1,21 @@
-   % Tidy the workspace
-%clearvars % -except beamline
-
 % Define the beamline
 DefineBeamline
 
 % Define a strucuture to store all the variables relating to the beamline.
 % This makes it easier to pass all the variables when calling a function.
 % Could possibly add more variables to this as and when they are needed.
-beamline.bl   = bl;
-beamline.corr = corr;
-beamline.bpm  = bpm;
-beamline.beam = beam;
+beamline.bl     = bl;    
+beamline.corr   = corr;
+beamline.bpm    = bpm;
+beamline.beam   = beam;
 beamline.quadsf = quadflist;
 beamline.quadsd = quaddlist;
 
 % Specify some prperties 
-numobs = 50;            % Specify the number of obersvations
-dcorrstrength = 1e-4;   % The strength of the correctors
-bpmresn = 70.0e-6;      % The resolution of the BPMs
-quaderror = 0.00;       % The error on the quads
+numobs          = 50;       % Specify the number of obersvations
+dcorrstrength   = 1e-4;     % The strength of the correctors
+bpmresn         = 70.0e-6;  % The resolution of the BPMs
+quaderror       = 0.00;     % The error on the quads
   
 % Apply errors to the quadrupole magnets
 for n = 1:ncells
@@ -35,68 +32,41 @@ end
 f0 = MasterOscillator.GetFrequency();
 MasterOscillator.SetFrequency(f0*1.0);
 
-%% Generate Response Matrices
-RespMatML = calcRespMatML(numobs, bpmresn, dcorrstrength, beamline);
-RespMatC = calcRespMatC(dcorrstrength, beamline);
+%% Main
 
-%% Compare Response Matrices
+% Check ML response matrix
 
-figure(1)
-subplot(2,1,1)
-hold off
-plot(RespMatC(:),'-ok')
-hold on
-plot(RespMatML(:),'--+r')
-xlabel('Response Matrix Index')
-ylabel('dy/dcorr')
-legend('Conventional','Machine learning')
-title('Values of response matrix elements')
+% Get the response matrix from the Ml method, dcorr will also store the
+% random set of corr changes that are used here.
+[RespMatML,dcorr] = calcRespMatML(numobs, bpmresn, dcorrstrength, beamline);
 
-subplot(2,1,2)
-hold off
-plot(RespMatML(:) - RespMatC(:), '-ok')
-xlabel('Response Matrix index')
-ylabel('Residual')
-title('Difference between ML method and Conventional method')
-%% Check the result
-
-% Generate a random set of corrector changes
-dcorr      =  dcorrstrength*randn(numel(beamline.corr),1);
-
-% ...and find the resulting change in the closed orbit
+% Get the bpm values again for this same set of cor changes
 bpmorbitdy = getBPMorbitdy(beamline, dcorr);
 
-% See what we get from the machine learning analysis...
-bpmorbitdyML = RespMatML*dcorr;
+% Calculate the dcorr values using the new bpm readings and the response
+% matrix from the ML model
+dcorrCalculated = pinv(RespMatML)*bpmorbitdy;
 
-% Calculate residual of ML and machine model
-residual = (bpmorbitdyML - bpmorbitdy);
-
-% Plot a comparison of the fitted vs actual response matrix elements
-figure(2)
-subplot(2,1,1)
+figure(1)
+subplot(2,1,1)  % compare the calulated dcorr to the orignal one used
 hold off
-plot(1e3*bpmorbitdy,'-ok')
+plot(dcorr, '-ob');
 hold on
-plot(1e3*bpmorbitdyML,'--+r')
-xlabel('BPM index')
-ylabel('Vertical orbit (mm)')
-legend('Model','Machine learning')
-title('Change in closed orbit from random correctors')
+plot(dcorrCalculated, '-or');
+legend("dcorr", "dcorrCalculated");
+ylabel("Corrector Strength"); xlabel("Corrector index");
 
-subplot(2,1,2)
+subplot(2,1,2)  % calculate the residual of the previous plot
 hold off
-plot(1e3*residual,'-ok')
-xlabel('BPM index')
-ylabel('Residual (mm)')
-title('Difference between ML prediction and machine model')
+plot(dcorrCalculated - dcorr, '-ok');
+ylabel("Residual"); xlabel("Corrector index");
 
-std(residual)
+std(dcorrCalculated - dcorr)
 
 %% Functions
-function respmatML=calcRespMatML(numobs_, BPMnoise_, dcorrstrengthScale, beamline_)
-    dcorrstrength = dcorrstrengthScale;    % Set the scale of corrector field strengths
-    bpmresn       = BPMnoise_; % Set the resolution of the bpms
+function [respmatML,dcorr]=calcRespMatML(numobs_, BPMnoise_, dcorrstrengthScale, beamline_)
+    dcorrstrength = dcorrstrengthScale; % Set the scale of corrector field strengths
+    bpmresn       = BPMnoise_;          % Set the resolution of the bpms
     
     dbpm   = zeros(numel(beamline_.bpm),  numobs_);
     dcorra = zeros(numel(beamline_.corr), numobs_);
@@ -138,7 +108,7 @@ end
 
 % Generate the response matrix for a conventional method, this method turns
 % on each corrector magnet in turn and then turns it off.
-function respmatC=calcRespMatC(dcorrfieldScale, beamline_)
+function respmatC=calcRespMatC(dcorrfieldarray, beamline_)
     for j = 1:numel(beamline_.bpm)
         beamline_.bpm{j}.ResetBuffer(1);
     end
@@ -168,8 +138,8 @@ function respmatC=calcRespMatC(dcorrfieldScale, beamline_)
     % a different corr in each iteration.
     for i=1:numel( beamline_.corr)
 
-        % Set the corr strength as the input of the function.
-        dcorrfield = dcorrfieldScale;
+        % Set the corr strength as the function input.
+        dcorrfield = dcorrfieldarray(i);
 
         beamline_.corr{i}.field = [dcorrfield, 0];
 
