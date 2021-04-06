@@ -15,12 +15,19 @@ beamline.quadsf = quadflist;
 beamline.quadsd = quaddlist;
 
 % Specify some prperties 
-numobs = 50;            % Specify the number of obersvations
+numobs = 100;            % Specify the number of obersvations
 dcorrstrength = 1e-4;   % The strength of the correctors
-bpmresn = 70.0e-6;      % The resolution of the BPMs
-quaderror = 0.00;       % The error on the quads
-  
-% Apply errors to the quadrupole magnets
+bpmresn = 1.0e-5;      % The resolution of the BPMs
+quaderror = 0.001;      % The error on the quads  
+
+% Set the rf frequency
+f0 = MasterOscillator.GetFrequency();
+MasterOscillator.SetFrequency(f0*1.0);
+
+%% Generate Response Matrices
+RespMatC = calcRespMatC(dcorrstrength, beamline);
+
+% Now apply errors to the quadrupole magnets for the ML method
 for n = 1:ncells
    
     fgradient = quadflist{n}.gradient;
@@ -31,34 +38,29 @@ for n = 1:ncells
     
 end
 
-% Set the rf frequency
-f0 = MasterOscillator.GetFrequency();
-MasterOscillator.SetFrequency(f0*1.0);
-
-%% Generate Response Matrices
 RespMatML = calcRespMatML(numobs, bpmresn, dcorrstrength, beamline);
-RespMatC = calcRespMatC(dcorrstrength, beamline);
+
 
 %% Compare Response Matrices
 
 figure(1)
 subplot(2,1,1)
 hold off
-plot(RespMatC(:),'-ok')
+plot(RespMatC(:).*(beam.rigidity/corrlength),RespMatML(:).*(beam.rigidity/corrlength),'.k')
 hold on
-plot(RespMatML(:),'--+r')
-xlabel('Response Matrix Index')
-ylabel('dy/dcorr')
-legend('Conventional','Machine learning')
+% plot(RespMatML(:),'--+r')
+xlabel('Conventional Resp Mat [m/Rad]')
+ylabel('ML Resp Mat [m/Rad]')
+% legend('Conventional','Machine learning')
 title('Values of response matrix elements')
 
 subplot(2,1,2)
 hold off
-plot(RespMatML(:) - RespMatC(:), '-ok')
-xlabel('Response Matrix index')
-ylabel('Residual')
+hist(RespMatML(:).*(beam.rigidity/corrlength) - RespMatC(:).*(beam.rigidity/corrlength),25)
+xlabel('Residual [m/Rad]')
+ylabel('Frequency')
 title('Difference between ML method and Conventional method')
-%% Check the result
+%% Check the result for ML
 
 % Generate a random set of corrector changes
 dcorr      =  dcorrstrength*randn(numel(beamline.corr),1);
@@ -92,6 +94,48 @@ ylabel('Residual (mm)')
 title('Difference between ML prediction and machine model')
 
 std(residual)
+
+%%
+
+% Generate a random set of corrector changes
+dcorr      =  dcorrstrength*randn(numel(beamline.corr),1);
+
+% ...and find the resulting change in the closed orbit
+bpmorbitdy = getBPMorbitdy(beamline, dcorr);
+
+dcorr_correct = pinv(RespMatML)*(bpmorbitdy);
+
+bpmorbitdy_correctedML = getBPMorbitdy(beamline, pinv(RespMatML)*(bpmorbitdy));
+bpmorbitdy_correctedC = getBPMorbitdy(beamline, pinv(RespMatC)*(bpmorbitdy));
+
+figure(3)
+subplot(2,1,1)
+hold off
+plot(1e3*bpmorbitdy,'-ok')
+hold on
+plot(1e3*bpmorbitdy_correctedML,'--+r')
+plot(1e3*bpmorbitdy_correctedC,'-.xb')
+xlabel('BPM index')
+ylabel('Vertical orbit (mm)')
+legend('Original orbit','ML corrected orbit', 'Conventionally corrected orbit')
+title('Change in closed orbit from random correctors and corrected orbit')
+
+subplot(2,1,2)
+hold off
+plot(1e3*(bpmorbitdy_correctedML - bpmorbitdy),'--+r')
+hold on
+plot(1e3*(bpmorbitdy_correctedC - bpmorbitdy),'-.xb')
+xlabel('BPM index')
+ylabel('Residual (mm)')
+legend('ML corrected orbit', 'Conventionally corrected orbit')
+title('Difference between corrected and uncorrected orbit')
+
+%% Output some information
+
+ML  = std(bpmorbitdy_correctedML - bpmorbitdy) 
+C   = std(bpmorbitdy_correctedC - bpmorbitdy)
+
+dlmwrite('output.csv',[numobs dcorrstrength bpmresn quaderror std(bpmorbitdy_correctedML - bpmorbitdy) std(bpmorbitdy_correctedC - bpmorbitdy)],'delimiter',',','-append');
 
 %% Functions
 function respmatML=calcRespMatML(numobs_, BPMnoise_, dcorrstrengthScale, beamline_)

@@ -7,7 +7,7 @@ ncells      = 16;
 corrlength  = 0.2;                       % corrector length in metres
 
 drift1 = Drift;
-  drift1.length = 5.00 - corrlength;     % metres
+  drift1.length = 5.00 - corrlength;     % metres 4.8
   
 drift2 = Drift;
   drift2.length = 6.00;                  % metres
@@ -56,7 +56,7 @@ drift6 = Drift;
   
 bpm    = cell(1,2*ncells);
 corr   = cell(1,  ncells);
-corr2  = cell(1,  ncells);
+kicks  = cell(1,  ncells);
 
 quadflist = cell(1, ncells);
 quaddlist = cell(1, ncells);
@@ -93,10 +93,10 @@ for n = 1:ncells
     bl.AppendComponent(sextD);
     
 %     % Add errors to the beam line, small kicks
-%     corr2{n}        = OrbitCorrector;
-%     corr2{n}.length = corrlength;
-%     corr2{n}.field  = [randn*1e-5, 1e-8]; 
-%     bl.AppendComponent(corr2{n});
+%     kicks{n}        = OrbitCorrector;
+%     kicks{n}.length = corrlength;
+%     kicks{n}.field  = [0, 0]; 
+%     bl.AppendComponent(kicks{n});
 %     bl.AppendComponent(drift5);
     
 end
