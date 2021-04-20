@@ -103,7 +103,7 @@ classdef LinacStructure < handle
                 Edc = (dp0 + 1/beta0)*P0;
 
                 % Increase reference energy on passing through each cell
-                beam.energy = beam.energy + dE;
+                beam.energy = E0 + dE;
                 
                 % Calculate the final momentum deviation of each particle
                 beta0 = beam.beta;

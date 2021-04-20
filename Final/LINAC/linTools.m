@@ -1,14 +1,18 @@
 classdef linTools
     properties
        beamline;
-       ML_Algorithm = 'mvn';
+       ML_Algorithm     = 'mvn';
+       disableBPMs      = false;
+       disabledBPMlist  = [];
     end
     methods
        function respmatML = calcRespMatML(this, numobs_, BPMnoise_, dcorrstrengthScale)
             dcorrstrength = dcorrstrengthScale;    % Set the scale of corrector field strengths
             bpmresn       = BPMnoise_; % Set the resolution of the bpms
+            numBPMs = numel(this.beamline.bpmlist);
+            %if this.disableBPMs, numBPMs = numel(this.beamline.bpmlist) - numel(this.disabledBPMlist); end
 
-            dbpm   = zeros(numel(this.beamline.bpmlist),  numobs_);
+            dbpm   = zeros(numBPMs,  numobs_);
             dcorra = zeros(numel(this.beamline.corrlist), numobs_);
 
             % Generate input data for ML
@@ -18,7 +22,7 @@ classdef linTools
                 dcorr       =  dcorrstrength*randn(numel(this.beamline.corrlist),1);
 
                 % ...and find the change in the closed orbit with these strengths
-                bpmorbitdy  = getBPMorbitdy(this, dcorr) + randn(numel(this.beamline.bpmlist),1)*bpmresn;
+                bpmorbitdy  = getBPMorbitdy(this, dcorr) + randn(numBPMs,1)*bpmresn;
 
         %         for n = 1:numel(this.beamline.corrlist)
         %            dcorr(n) = dcorr(n)*(this.beamline.corrlist{n}.length/this.beamline.beam.rigidity); 
@@ -36,7 +40,7 @@ classdef linTools
             xcell = cell(1,numobs_);
 
             for i = 1:numobs_
-                xcell{i} = [kron([xmat(i,:)],eye(numel(this.beamline.bpmlist)))];
+                xcell{i} = [kron([xmat(i,:)],eye(numBPMs))];
             end
 
             % Fit a response matrix to the observed changes in trajectory resulting
@@ -47,7 +51,7 @@ classdef linTools
             se = sqrt(diag(V));
 
             % beta is the response matrix found from the machine learning approach
-            respmatML = reshape(beta, [numel(this.beamline.bpmlist), numel(this.beamline.corrlist)]);
+            respmatML = reshape(beta, [numBPMs, numel(this.beamline.corrlist)]);
        end % function CalcRespMatML
 
         function respmatC = calcRespMatC(this, dcorrfieldScale)
@@ -88,13 +92,13 @@ classdef linTools
             end
             
             % Get the new BPM readings and calculate the change
-            bpmorbitdy_ = track_getBPMreadings(this) - bpmorbitdy;
+            bpmorbitdy = track_getBPMreadings(this) - bpmorbitdy;
 
             % Return corrector strengths to previous value
             for i = 1:numel(this.beamline.corrlist)
                this.beamline.corrlist{i}.field = this.beamline.corrlist{i}.field - [dcorrStrength_(i), 0];
             end
-
+            bpmorbitdy_ = bpmorbitdy;
         end% function getBPMorbitdy
         
         function bpmreadings_ = getBPMvalues_corr(this, dcorr, bpmresn)
@@ -103,7 +107,7 @@ classdef linTools
                this.beamline.corrlist{i}.field = this.beamline.corrlist{i}.field + [dcorr(i), 0];
             end
             
-            % Get the new BPM readings and calculate the change
+            % Get the new BPM readings
             bpmreadings_ = track_getBPMreadings(this) + randn(numel(this.beamline.bpmlist),1)*bpmresn;
 
             % Return corrector strengths to previous value
@@ -124,14 +128,18 @@ classdef linTools
                 this.beamline.bpmlist{j}.ResetBuffer(1);
             end
 
-            % Track the particle through the beamline
-            for n = 1:length(this.beamline.bl.componentlist)
-                this.beamline.bl.Track([n n],this.beamline.beam);
-            end
+            n = length(this.beamline.bl.componentlist);
+            this.beamline.bl.Track([1 n],this.beamline.beam);
 
             % Retreive the BPM readings
             for j = 1:numel(this.beamline.bpmlist)
                 bpmorbitdy(j) = this.beamline.bpmlist{j}.buffer(2);    
+            end
+           
+            if this.disableBPMs
+                for i=1:numel(this.disabledBPMlist)
+                    bpmorbitdy(this.disabledBPMlist(i)) = 0;
+                end
             end
 
             bpmreadings_ = bpmorbitdy;
@@ -139,37 +147,50 @@ classdef linTools
 
         function setQuadFerrors(this, bool, quadError_)
             if bool
-                for n = 1:numel(this.beamline.quadflist)
-                    fgradient = this.beamline.quadflist{n}.gradient;
-                    this.beamline.quadflist{n}.gradient = fgradient * (1 + quadError_*randn);
-                end
-                for n = 1:numel(this.beamline.quaddlist)
-                    dgradient = this.beamline.quaddlist{n}.gradient;
-                    this.beamline.quaddlist{n}.gradient = dgradient * (1 + quadError_*randn);
+                for n = 1:numel(this.beamline.quadlist)
+                    gradient = this.beamline.quadlist{n}.gradient;
+                    x = (1 + quadError_) + quadError_*randn;
+                    this.beamline.quadlist{n}.gradient = gradient * x;
                 end
             elseif bool == false
-                for n = 1:numel(this.beamline.quadflist)
-                    this.beamline.quadflist{n}.gradient = this.beamline.fgradient0(n);
-                end
-                for n = 1:numel(this.beamline.quaddlist)
-                    this.beamline.quaddlist{n}.gradient = this.beamline.dgradient0(n);
+                for n = 1:numel(this.beamline.quadlist)
+                    this.beamline.quadlist{n}.gradient = this.beamline.gradient0(n);
                 end
             end
             
         end % function setQuadFerrors
         
-        function setQuadAerrors(this, bool, quaderrorstrength)
+        function setQuadAerrors(this, bool, deltaY)
+            Lkick       = this.beamline.quaderrlist{1}.length;
+            deltaYvals  = randn(numel(this.beamline.quadlist),1)*deltaY;
             if bool 
-                for n = 1:numel(this.beamline.quaderrlist)
-                    this.beamline.quaderrlist{n}.field = [quaderrorstrength(n),0];
+                for n=1:numel(this.beamline.quadlist)
+                   intgField = deltaYvals(n)*this.beamline.quadlist{n}.gradient ...
+                                       *this.beamline.quadlist{n}.length;
+                   f = [intgField/Lkick, 0];
+                   this.beamline.quaderrlist{n}.field = [intgField/Lkick, 0];
                 end
-            else  
+            elseif bool == false
                 for n = 1:numel(this.beamline.quaderrlist)
                     this.beamline.quaderrlist{n}.field = [0,0];
                 end
             end
         end % function setQuadAerrors
-        
-    end % methods
+
+% Original alignment error function
+%          function setQuadAerrors(this, bool, quaderrorstrength)
+%                     kickVals = randn(numel(this.beamline.quaderrlist),1)*quaderrorstrength;
+%                     if bool 
+%                         for n = 1:numel(this.beamline.quaderrlist)
+%                             this.beamline.quaderrlist{n}.field = [kickVals(n),0];
+%                         end
+%                     else  
+%                         for n = 1:numel(this.beamline.quaderrlist)
+%                             this.beamline.quaderrlist{n}.field = [0,0];
+%                         end
+%                     end
+%                 end % function setQuadAerrors
+
+            end % methods
     
 end % classdef

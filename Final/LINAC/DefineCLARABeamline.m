@@ -66,6 +66,7 @@ beam.momentum = momentum0;
 
 driftlist   = cell(0,0);
 quadflist   = cell(0,0);
+quadlist    = cell(0,0);
 quaddlist   = cell(0,0);
 quaderrlist = cell(0,0);
 corrlist    = cell(0,0);
@@ -89,21 +90,25 @@ for n=1:length(NumericInfo)
             driftlist{end}.length = NumericInfo(n,3);
             bl.AppendComponent(driftlist{end});
         case "Quadrupole"
-            if NumericInfo(n,11) > 0
-               quadflist{end+1}         = Quadrupole;
-               quadflist{end}.length    = NumericInfo(n,3);
-               quadflist{end}.gradient  = NumericInfo(n,11) * beam.rigidity;
-               bl.AppendComponent(quadflist{end});
-            else
-               quaddlist{end+1}         = Quadrupole;
-               quaddlist{end}.length    = NumericInfo(n,3);
-               quaddlist{end}.gradient  = NumericInfo(n,11) * beam.rigidity; % tesla/meter
-               bl.AppendComponent(quaddlist{end});
-            end
+%             if NumericInfo(n,11) > 0
+%                quadflist{end+1}         = Quadrupole;
+%                quadflist{end}.length    = NumericInfo(n,3);
+%                quadflist{end}.gradient  = NumericInfo(n,11) * beam.rigidity;
+%                bl.AppendComponent(quadflist{end});
+%             else
+%                quaddlist{end+1}         = Quadrupole;
+%                quaddlist{end}.length    = NumericInfo(n,3);
+%                quaddlist{end}.gradient  = NumericInfo(n,11) * beam.rigidity; % tesla/meter
+%                bl.AppendComponent(quaddlist{end});
+%             end
+            quadlist{end+1}         = Quadrupole;
+                quadlist{end}.length    = NumericInfo(n,3);
+                quadlist{end}.gradient  = NumericInfo(n,11) * beam.rigidity;
+                bl.AppendComponent(quadlist{end});
             quaderrlist{end+1} = OrbitCorrector;
-            quaderrlist{end}.length = quaderrorLength;
-            quaderrlist{end}.field = [0, 0];
-            bl.AppendComponent(quaderrlist{end});
+                quaderrlist{end}.length = quaderrorLength;
+                quaderrlist{end}.field = [0, 0];
+                bl.AppendComponent(quaderrlist{end});
         case "Kicker"
             corrlist{end+1} = OrbitCorrector;
             corrlist{end}.length = NumericInfo(n,3);
@@ -160,8 +165,9 @@ fprintf('Total beamline length = %6.5g m\n', svals(end) );
 
 % Setup structure for all useful variables in this script
 beamline.driftlist      = driftlist;
-beamline.quadflist      = quadflist;
-beamline.quaddlist      = quaddlist;
+% beamline.quadflist      = quadflist;
+% beamline.quaddlist      = quaddlist;
+beamline.quadlist       = quadlist;
 beamline.quaderrlist    = quaderrlist;
 beamline.corrlist       = corrlist;
 beamline.bpmlist        = bpmlist;
@@ -172,9 +178,7 @@ beamline.bl             = bl;
 beamline.momentum0 = momentum0;
 
 % Define variables containing original quad strengths
-for n = 1:numel(beamline.quadflist)
-    beamline.fgradient0(n) = beamline.quadflist{n}.gradient;
+for n = 1:numel(beamline.quadlist)
+    beamline.gradient0(n) = beamline.quadlist{n}.gradient;
 end
-for n = 1:numel(beamline.quaddlist)
-    beamline.dgradient0(n) = beamline.quaddlist{n}.gradient;
-end
+
