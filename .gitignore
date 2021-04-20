@@ -2,3 +2,86 @@
 main.m~
 mainold.m
 testscript.m
+.DS_Store
+CLARA_lattice.xlsx
+DefineCLARABeamline_2.m
+OLD/.DS_Store
+OLD/CLARA Lattice Functions MADX.png
+OLD/CLARA Lattice Functions.png
+OLD/CLARA_lattice.xlsx
+OLD/DefineCLARABeamline_2.m
+OLD/fig.bmp
+OLD/fig.png
+OLD/LINAC/.DS_Store
+OLD/LINAC/15AprilCode.zip
+OLD/LINAC/17_April_21_Code.zip
+OLD/LINAC/BPMparamScan.m
+OLD/LINAC/BPMparamScan_Run1.mat
+OLD/LINAC/BPMparamScan_Run2_FF.mat
+OLD/LINAC/BPMparamScan_Run3_FF.mat
+OLD/LINAC/BPMparamScan_Run4_FF_VA.mat
+OLD/LINAC/CLARA Lattice Functions MADX.png
+OLD/LINAC/CLARA Lattice Functions.png
+OLD/LINAC/CLARA_lattice.csv
+OLD/LINAC/CLARAreview.m
+OLD/LINAC/CLARAreviewV2.m
+OLD/LINAC/CLARAreviewV3.m
+OLD/LINAC/CLARAreviewV4.m
+OLD/LINAC/CLARAreviewV4.m~
+OLD/LINAC/DefineCLARABeamline.m
+OLD/LINAC/DefineCLARABeamline.m~
+OLD/LINAC/DefineCLARABeamline_1.m
+OLD/LINAC/DefineCLARABeamlineOld.m
+OLD/LINAC/figsCollected.pdf
+OLD/LINAC/last_dbpm.csv
+OLD/LINAC/last_dcorra.csv
+OLD/LINAC/lastRM.csv
+OLD/LINAC/LinacStructure.m
+OLD/LINAC/linTools.m
+OLD/LINAC/linTools.m~
+OLD/LINAC/mainCLARA.m
+OLD/LINAC/ParameterScanV2.m
+OLD/LINAC/ParameterScanV3.m
+OLD/LINAC/ParameterScanV3.m~
+OLD/LINAC/PlotLatticeFunctionsCLARA.m
+OLD/LINAC/removeBPMsTest.m
+OLD/LINAC/RMinvestigation.m
+OLD/LINAC/RUNDATA/.DS_Store
+OLD/LINAC/RUNDATA/Figures/A1.pdf
+OLD/LINAC/RUNDATA/Figures/B1.pdf
+OLD/LINAC/RUNDATA/Figures/B2.pdf
+OLD/LINAC/RUNDATA/runA1.mat
+OLD/LINAC/RUNDATA/runA2.mat
+OLD/LINAC/RUNDATA/runA3.mat
+OLD/LINAC/RUNDATA/untitled.bmp
+OLD/LINAC/RUNDATA/Week 8/Figs/run1.fig
+OLD/LINAC/RUNDATA/Week 8/Figs/run2a.fig
+OLD/LINAC/RUNDATA/Week 8/Figs/run4.fig
+OLD/LINAC/RUNDATA/Week 8/Run1a.mat
+OLD/LINAC/RUNDATA/Week 8/Run1b.mat
+OLD/LINAC/RUNDATA/Week 8/Run1c.mat
+OLD/LINAC/RUNDATA/Week 8/run2a.mat
+OLD/LINAC/RUNDATA/Week 8/Run3.mat
+OLD/LINAC/RUNDATA/Week 8/run4a.mat
+OLD/LINAC/RUNDATA/Week 8/run4b.mat
+OLD/LINAC/testOrbit.m
+OLD/LINAC/testOrbit.m~
+OLD/output.csv
+OLD/README.md
+OLD/STORAGE_RING/.DS_Store
+OLD/STORAGE_RING/CheckRespMats.m
+OLD/STORAGE_RING/ConstructResponseMatrix2.m
+OLD/STORAGE_RING/DefineBeamline.m
+OLD/STORAGE_RING/main.m
+OLD/STORAGE_RING/OrbitCorrection2.m
+OLD/STORAGE_RING/orbitPlotter.m
+OLD/STORAGE_RING/output.csv
+OLD/STORAGE_RING/ringReview.m
+OLD/STORAGE_RING/ringTools.m
+OLD/STORAGE_RING/Storage_Ring_Tests.xlsx
+OLD/STORAGE_RING/untitled.jpg
+OLD/STORAGE_RING/~$Storage_Ring_Tests.xlsx
+OLD/trajPlotter.m
+OLD/untitled.jpg
+~$CLARA_lattice.xlsx
+~$Storage_Ring_Tests.xlsx
