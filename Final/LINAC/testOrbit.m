@@ -26,7 +26,7 @@ ML_numobs       = linspace(1000,1000,1);
 BPMnoise        = linspace(10,70,7)*1e-6;   % unit
 FocusingError   = linspace(1,10,10)*1e-3;   % unit
 
-AlignmentError  = linspace(1,90,11)*1e-6; % m 
+AlignmentError  = linspace(10,90,11)*1e-6; % m 
 
 %%
 
@@ -87,19 +87,19 @@ RespMatC = lt.calcRespMatC(dcorrStrength);
 
 rmsBPMvals        = zeros(numSeeds,1);
 mean_rmsBPMvals   = zeros(numel(AlignmentError),1);
-err_rmsBPMvals    = zeros(numel(AlignmentError),2);
+err_rmsBPMvals    = zeros(numel(AlignmentError),1);
 
 rmsBPMvals_C      = zeros(numSeeds,1);
 mean_rmsBPMvals_C = zeros(numel(AlignmentError),1);
-err_rmsBPMvals_C  = zeros(numel(AlignmentError),2);
+err_rmsBPMvals_C  = zeros(numel(AlignmentError),1);
 
 FocusingError = 0.01;
 
-for i=1:numel(AlignmentError)
+% for i=1:numel(AlignmentError)
    for n=1:numSeeds
-        rng(n)
+        rng(n*i)
         lt.setQuadFerrors(true, FocusingError);
-        lt.setQuadAerrors(true, AlignmentError(i));
+        lt.setQuadAerrors(true, AlignmentError);
         
         bpmValsY = lt.track_getBPMreadings() + randn(numel(beamline.bpmlist),1)*70e-6;
         
@@ -108,22 +108,32 @@ for i=1:numel(AlignmentError)
         
         lt.setQuadAerrors(false, AlignmentError(i));
         lt.setQuadFerrors(false, FocusingError);
-   end
-   mean_rmsBPMvals(i)     = mean(rmsBPMvals(:));
-   err_rmsBPMvals(i,:)    = prctile(rmsBPMvals,[5 95]);
-   
-   mean_rmsBPMvals_C(i)   = mean(rmsBPMvals_C(:));
-   err_rmsBPMvals_C(i,:)  = prctile(rmsBPMvals_C,[5 95]);
-end
+    end
+%    mean_rmsBPMvals(i)     = mean(rmsBPMvals(:));
+%    err_rmsBPMvals(i)      = std(rmsBPMvals);
+%    
+%    mean_rmsBPMvals_C(i)   = mean(rmsBPMvals_C(:));
+%    err_rmsBPMvals_C(i)    = std(rmsBPMvals_C);
+% end
 
 figure(2)
 hold off
-errorbar(AlignmentError*1e6,mean_rmsBPMvals(:)*1e6,err_rmsBPMvals(:,1)*1e6,err_rmsBPMvals(:,2)*1e6, '-ok')
+errorbar(AlignmentError*1e6,mean_rmsBPMvals(:)*1e6,err_rmsBPMvals(:)*1e6, '-ok')
 hold on
-errorbar(AlignmentError*1e6,mean_rmsBPMvals_C(:)*1e6,err_rmsBPMvals_C(:,1)*1e6,err_rmsBPMvals_C(:,2)*1e6, '-.xr')
+errorbar(AlignmentError*1e6,mean_rmsBPMvals_C(:)*1e6,err_rmsBPMvals_C(:)*1e6, '-.xr')
+
+legend('Uncorrected', 'Conventionally corrected')
 
 ylabel('RMS vertical trajectory [\mum]')
 xlabel('Quadrupole equivalent displacement [\mum]')
+
+%figure(3)
+% hold on
+% errorbar(5,mean(rmsBPMvals(:)), prctile(rmsBPMvals,[5]), prctile(rmsBPMvals,[95]), 'xk')
+% hold on
+% errorbar(6,mean(rmsBPMvals(:)), std(rmsBPMvals), '+r')
+% xlim([0 7])
+
 
 
 

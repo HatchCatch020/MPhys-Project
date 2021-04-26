@@ -101,8 +101,8 @@ end % k (kickStrength)
 % 
 % output = [(x_b')*1e6 x_t(i,:)' y_C*1e3 y_ML_1*1e3  y_Cerr*1e3 y_ML_1err*1e3];
 
-LtopVal = length(AlignmentError);
-LbotVal = length(BPMnoise);
+LtopVal = length(dcorrStrength);
+LbotVal = length(AlignmentError);
 yConv = NaN(LtopVal,LbotVal*LtopVal+1);
 yML = NaN(LtopVal,LbotVal*LtopVal+1,numel(ML_numobs));
 
@@ -129,8 +129,8 @@ labels_top = strings(LtopVal*LbotVal,1);
 g=1;
 for i=1:LtopVal
     for k=1:LbotVal
-        labels_bot(g) = sprintf('%1g', BPMnoise(k)*1e6);
-        labels_top(g) = sprintf('%1g', AlignmentError(i)*1e6);
+        labels_bot(g) = sprintf('%1g', AlignmentError(k)*1e6);
+        labels_top(g) = sprintf('%1g', dcorrStrength(i)*1e6);
         g = g+1;
     end
 end
@@ -145,9 +145,9 @@ xTL = 0:1:LbotVal*LtopVal;
 % fill2   = [NaN NaN NaN NaN NaN 8e-4 8e-4 8e-4 8e-4 8e-4 8e-4 NaN NaN NaN NaN NaN];
 % fill3   = [NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN 8e-4 8e-4 8e-4 8e-4 8e-4 8e-4];
 
-fill1   = [8e-4 8e-4 8e-4 8e-4 8e-4 8e-4 8e-4 NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN];
-fill2   = [NaN NaN NaN NaN NaN NaN 8e-4 8e-4 8e-4 8e-4 8e-4 8e-4 8e-4 NaN NaN NaN NaN NaN NaN];
-fill3   = [NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN 8e-4 8e-4 8e-4 8e-4 8e-4 8e-4 8e-4];
+fill1   = [8e-4 8e-4 8e-4 8e-4 8e-4 8e-4 NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN];
+fill2   = [NaN NaN NaN NaN NaN 8e-4 8e-4 8e-4 8e-4 8e-4 8e-4 NaN NaN NaN NaN NaN];
+fill3   = [NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN 8e-4 8e-4 8e-4 8e-4 8e-4 8e-4];
 
 figure
 

@@ -21,19 +21,19 @@ lt.ML_Algorithm = 'mvn';
 %% Variables
 
 % Fixed variables
-numSeeds   = 30;
-dcorrStrength   = 1e-6; % Tesla
+numSeeds   = 10;
+dcorrStrength   = 1e-3; % Tesla
 kickStrength    = 1e-6;   % m
 
 % Varying
-ML_numobs       = linspace(100,100,1);
+ML_numobs       = 1000;
 BPMnoise        = linspace(10,50,5)*1e-6;   % metres
 FocusingError   = linspace(10,80,8)*1e-2;   % percentage
-AlignmentError  = linspace(1,20,5)*1e-6;%[22.1111 24.2222 26.3333 28.4444 30.5555]*1e-6;   % metres
+AlignmentError  = linspace(10,50,5)*1e-6;   % metres
 
 % Setup fixed values for tests
-fixedBPMnoise = 30e-6;
-fixedFocusingError = 0.005;
+fixedBPMnoise = 10e-6;
+fixedFocusingError = 0.01;
 
 % BPMs to be 
 
@@ -117,16 +117,11 @@ fixedFocusingError = 0.005;
 %% Test Alignment error
 
 % Setup arrays
-rmsBPMvals_C        = zeros(numel(AlignmentError), 1, numSeeds);
-rmsBPMvals_ML       = zeros(numel(AlignmentError), numel(ML_numobs), numSeeds);
-mean_rmsBPMvals_C   = zeros(numel(AlignmentError),1);
-mean_rmsBPMvals_ML  = zeros(numel(AlignmentError), numel(ML_numobs));
-err_rmsBPMvals_C    = zeros(numel(AlignmentError),6);
-err_rmsBPMvals_ML   = zeros(numel(AlignmentError),6, numel(ML_numobs));
+rmsBPMvals_ML       = zeros(numel(AlignmentError), numSeeds);
+mean_rmsBPMvals_ML  = zeros(numel(AlignmentError),1);
+err_rmsBPMvals_ML   = zeros(numel(AlignmentError),6);
 
 for i = 1:numel(AlignmentError)
-    % Calc resp mat with conventional method in 'perfect' model
-    RespMatC = lt.calcRespMatC(dcorrStrength);
     
     % Generate corrections for multiple different seeds
     for k = 1:numSeeds
@@ -137,69 +132,42 @@ for i = 1:numel(AlignmentError)
         
         bpmValsY = lt.track_getBPMreadings() + randn(numel(beamline.bpmlist),1)*fixedBPMnoise;
         
-        bpmValsCorrected_C  = lt.getBPMvalues_corr(pinv(RespMatC,  1e-3)*(-bpmValsY), fixedBPMnoise);
-        rmsBPMvals_C(i,1,k) = rms(bpmValsCorrected_C);
-        
-        for j = 1:numel(ML_numobs)
-            RespMatML = lt.calcRespMatML(ML_numobs(j), fixedBPMnoise, dcorrStrength);
-            bpmValsCorrected_ML  = lt.getBPMvalues_corr(pinv(RespMatML,  1e-3)*(-bpmValsY), fixedBPMnoise);
-            rmsBPMvals_ML(i,j,k) = rms(bpmValsCorrected_ML);
-        end
+        RespMatML = lt.calcRespMatML(ML_numobs, fixedBPMnoise, dcorrStrength);
+        bpmValsCorrected_ML  = lt.getBPMvalues_corr(pinv(RespMatML,  1e-3)*(-bpmValsY), fixedBPMnoise);
+        rmsBPMvals_ML(i,k) = rms(bpmValsCorrected_ML);
         % Turn off errors
         lt.setQuadFerrors(false, fixedFocusingError);
         lt.setQuadAerrors(false, AlignmentError(i));
     end
     % Calc the mean of rms values over all the seeds, and also the std of
     % the rms values.
-    mean_rmsBPMvals_C(i)  =  mean(rmsBPMvals_C(i,1,:));
-    err_rmsBPMvals_C(i,:)   =   prctile(rmsBPMvals_C(i,1,:),[10 90 20 80 30 70]);
-    for j=1:numel(ML_numobs) 
-        mean_rmsBPMvals_ML(i,j) = mean(rmsBPMvals_ML(i,j,:));
-        err_rmsBPMvals_ML(i,:,j)  =  prctile(rmsBPMvals_ML(i,j,:),[10 90 20 80 30 70]);
-    end
+    mean_rmsBPMvals_ML(i) = mean(rmsBPMvals_ML(i,:));
+    err_rmsBPMvals_ML(i,:)  =  prctile(rmsBPMvals_ML(i,:),[10 90 20 80 30 70]);
 end
 
-% figure(2)
-% hold off
-% errorbar(AlignmentError*1e6,1e3*mean_rmsBPMvals_C(:),1e3*err_rmsBPMvals_C(:,1),1e3*err_rmsBPMvals_C(:,2), '--+r', 'DisplayName', 'Conventional')
-% hold on
-% for j=1:numel(ML_numobs)
-%     errorbar(AlignmentError*1e6,1e3*mean_rmsBPMvals_ML(:),1e3*err_rmsBPMvals_ML(:,1,j),1e3*err_rmsBPMvals_ML(:,2,j), '-.x', 'DisplayName', sprintf('ML (Observations = %d)', ML_numobs(j)))
-% end
-% xlabel('Alignment Error [\mum]')
-% ylabel('RMS BPM Values [mm]')
-% legend
-% title(sprintf('(Focusing error = %g, BPM noise = %g)', fixedFocusingError, fixedBPMnoise))
-
-figure(4)
+figure(3)
 hold off
-plot(AlignmentError*1e6,1e3*mean_rmsBPMvals_C(:),'--+r', 'DisplayName', 'Conventional')
-hold on
-for j=1:numel(ML_numobs)
-    plot(AlignmentError*1e6,1e3*mean_rmsBPMvals_ML(:), '-.x', 'DisplayName', sprintf('ML (Observations = %d)', ML_numobs(j)))
-end
-shade(AlignmentError*1e6,1e3*err_rmsBPMvals_C(:,5),AlignmentError*1e6,1e3*err_rmsBPMvals_C(:,6),'FillType',[2 1],'LineStyle', 'none','FillColor', 'r')
-shade(AlignmentError*1e6,1e3*err_rmsBPMvals_ML(:,5),AlignmentError*1e6,1e3*err_rmsBPMvals_ML(:,6),'FillType',[2 1],'LineStyle', 'none', 'FillColor', 'cyan')
+errorbar(AlignmentError*1e6,1e3*mean_rmsBPMvals_ML(:),1e3*err_rmsBPMvals_ML(:,1),1e3*err_rmsBPMvals_ML(:,2), '-.x', 'DisplayName', sprintf('ML (Observations = %d)', ML_numobs))
+
 xlabel('Alignment Error [\mum]')
 ylabel('RMS BPM Values [mm]')
-xlim([1 20]); ylim([0 0.07])
-legend('Conventional',sprintf('ML (Observations = %d)', ML_numobs(j)))
+legend
 title(sprintf('(Focusing error = %g, BPM noise = %g)', fixedFocusingError, fixedBPMnoise))
 
-% generate a plot of the correction from the final interation 
-figure(3)
-subplot(2,1,1)
-hold off
-plot(1e3*bpmValsY,'-ok')
-hold on
-plot(1e3*bpmValsCorrected_ML,'--+r')
-plot(1e3*bpmValsCorrected_C,'-.xb')
-xlabel('BPM index')
-ylabel('Vertical position (mm)')
-legend('Original',sprintf('ML corrected numObs = %d', ML_numobs(end)), 'Conventionally corrected')
-title(sprintf('Focusing error scale = %d T/m, Alignment error scale = %d T, BPM noise scale = %d',fixedFocusingError, kickStrength, BPMnoise(end)))
-
-subplot(2,1,2)
+% % generate a plot of the correction from the final interation 
+% figure(3)
+% subplot(2,1,1)
+% hold off
+% plot(1e3*bpmValsY,'-ok')
+% hold on
+% plot(1e3*bpmValsCorrected_ML,'--+r')
+% plot(1e3*bpmValsCorrected_C,'-.xb')
+% xlabel('BPM index')
+% ylabel('Vertical position (mm)')
+% legend('Original',sprintf('ML corrected numObs = %d', ML_numobs(end)), 'Conventionally corrected')
+% title(sprintf('Focusing error scale = %d T/m, Alignment error scale = %d T, BPM noise scale = %d',fixedFocusingError, kickStrength, BPMnoise(end)))
+% 
+% subplot(2,1,2)
 
 % %% Test alignment error
 % 

@@ -167,7 +167,7 @@ classdef linTools
                 for n=1:numel(this.beamline.quadlist)
                    intgField = deltaYvals(n)*this.beamline.quadlist{n}.gradient ...
                                        *this.beamline.quadlist{n}.length;
-                   f = [intgField/Lkick, 0];
+                   %f = [intgField/Lkick, 0];
                    this.beamline.quaderrlist{n}.field = [intgField/Lkick, 0];
                 end
             elseif bool == false
